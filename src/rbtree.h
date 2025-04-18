@@ -3,7 +3,10 @@
 
 #include <stddef.h>
 
-typedef enum { RBTREE_RED, RBTREE_BLACK } color_t;
+typedef enum { 
+  RBTREE_RED, 
+  RBTREE_BLACK 
+} color_t;
 
 typedef int key_t;
 
@@ -27,6 +30,7 @@ node_t *rbtree_min(const rbtree *);
 node_t *rbtree_max(const rbtree *);
 int rbtree_erase(rbtree *, node_t *);
 
-int rbtree_to_array(const rbtree *, key_t *, const size_t);
+int rbtree_to_array(
+  const rbtree *, key_t *, const size_t);
 
 #endif  // _RBTREE_H_
