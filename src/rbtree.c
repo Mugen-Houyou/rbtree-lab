@@ -4,6 +4,37 @@
 #include <stdlib.h>
 
 
+node_t *minBySubtree(rbtree* t, node_t* z) {
+  node_t* result;
+  result = z;
+  
+  while (result->left != t->nil)
+    result = result->left;
+    
+  return result;
+}
+
+node_t *maxBySubtree(rbtree* t, node_t* z) {
+  node_t* result;
+  result = z;
+  
+  while (result->right != t->nil)
+    result = result->right;
+    
+  return result;
+}
+
+void rbtreeTransplant(rbtree* t, node_t* old, node_t* new){
+  if (old->parent == t->nil)
+    t->root = new;
+  else if (old == old->parent->left)
+    old->parent->left = new;
+  else
+    old->parent->right = new;
+
+  new->parent = old-> parent;
+}
+
 void rotateLeft(rbtree* t, node_t** axis){
   node_t* y;
 
@@ -74,7 +105,54 @@ node_t *newNode(rbtree* t, const key_t key){
   return newChild;
 }
 
-void restoreRbtOrder(rbtree *t, node_t *z) {
+void restoreEraseOrder(rbtree *t, node_t *x) {
+  node_t *w, *y, *uncle, *me;
+
+  me = x;
+  x = NULL;
+
+  // 대상이 NIL면 돌아가 (필요없으니까)
+  if (me == t->nil)
+    return;
+
+  for (;;){
+    // 대상이 흑색 루트면 돌아가 (필요없으니까)
+    if (me == t->root && me->color == RBTREE_BLACK)
+      break;
+    
+    if (me == me->parent->left){ // 대상이 왼쪽 자식
+      w = me->parent->right;
+      if (w->color == RBTREE_RED){
+	w->color = RBTREE_BLACK;
+	me->parent->color = RBTREE_RED;
+	rotateLeft(t, me->parent);
+	w = me->parent->right;
+      }
+      if (w->left->color == RBTREE_BLACK && w->right->color == RBTREE_BLACK){
+	w->color = RBTREE_RED;
+	me = me->parent;
+      }else {
+	if ( w->right->color == RBTREE_BLACK){
+	  w->left->color = RBTREE_BLACK;
+	  w->color = RBTREE_RED;
+	  rotateRight(t, w);
+	  w = me->parent->right;
+	}
+	w->color = me->parent->color;
+	me->parent->color = RBTREE_BLACK;
+	w->right->color = RBTREE_RED;
+	rotateLeft(t, me->parent);
+	me = t->root;
+      }
+    }else{ // 대상이 오른쪽 자식
+
+    }
+  }
+  // 루트를 흑색으로
+  t->root->color = RBTREE_BLACK;
+}
+
+void restoreInsertOrder(rbtree *t, node_t *z) {
   int infLoop;
   node_t *me, *uncle, *grandp; // 문장 너무 길어짐
 
@@ -88,23 +166,18 @@ void restoreRbtOrder(rbtree *t, node_t *z) {
     // 부모가 블랙이면 돌아가 (필요없으니까)
     if (me->parent->color == RBTREE_BLACK)
       break;
-
-    // parent가 루트였다!
-    if (me->parent == t->root) { 
-      me->parent->color = RBTREE_BLACK;
-      break;
-    }
   
-    // 조부모가 없으면 부모가 루트니까 블랙으로 칠하고 끝
-    if (me->parent->parent == t->nil){
+    // 부모가 루트면 (or 조부모 없으면) 블랙으로 칠하고 끝
+    if (me->parent == t->root || me->parent->parent == t->nil){
       me->parent->color = RBTREE_BLACK;
       break;
     }
 
+    // 얼리 리턴 끝, 조부모 및 삼촌 지정
     grandp = me->parent->parent;
     uncle = (me->parent == grandp->left) ? grandp->right : grandp->left;
 
-    // 케이스 1.1. 부모, 삼촌이 모두 RED - 좌측 버전
+    // 케이스 1. 부모, 삼촌이 모두 RED - 좌측 버전
     if (me->parent->color == RBTREE_RED && uncle->color == RBTREE_RED) {      
       me->parent->color = RBTREE_BLACK;
       uncle->color = RBTREE_BLACK;
@@ -113,29 +186,31 @@ void restoreRbtOrder(rbtree *t, node_t *z) {
       continue; // 이걸로 삼촌은 무.적.권. BLACK.
     }
 
-    // 케이스 2.1., 3.1. 부모는 RED, 숙부는 BLACK, 삼각형 형태 - 좌측 버전
-    // 케이스 2.2., 3.2. 부모는 RED, 숙부는 BLACK, 삼각형 형태 - 우측 버전
+    // 케이스 2, 3. 부모는 RED, 숙부는 BLACK, 삼각형 형태
     if (me->parent == grandp->left) { // Left‑Right 삼각형 => Left‑Left 일자
       if (me == me->parent->right) {
-        me = me->parent;
-        rotateLeft(t, &me);
+	me = me->parent;
+	rotateLeft(t, &me);
       }
       me->parent->color = RBTREE_BLACK;
       grandp->color = RBTREE_RED;
       rotateRight(t, &grandp);
-      break;
     } else { // Right‑Left 삼각형 => Right‑Right 일자
       if (me == me->parent->left) {
-        me = me->parent;
-        rotateRight(t, &me);
+	me = me->parent;
+	rotateRight(t, &me);
       }
       me->parent->color = RBTREE_BLACK;
       grandp->color = RBTREE_RED;
       rotateLeft(t, &grandp);
-      break;
     }
-  }
 
+    // 마지막으로 R-R여부 체크 후 continue/break 결정
+    if(me->parent->color == RBTREE_RED)
+      continue;
+    else
+      break;
+  }
   // 루트를 흑색으로
   t->root->color = RBTREE_BLACK;
 }
@@ -201,7 +276,7 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
 
   child->parent = parent;
 
-  restoreRbtOrder(t, child);
+  restoreInsertOrder(t, child);
 
   return child;
 }
@@ -232,22 +307,65 @@ node_t *rbtree_find(const rbtree *t, const key_t key) {
       return currNode;
     else break;
   }
-  
+
   return NULL;
 }
 
 node_t *rbtree_min(const rbtree *t) {
-  // TODO: implement find
-  return t->root;
+  node_t* result;
+  result = t->root;
+  
+  while (result->left != t->nil)
+    result = result->left;
+    
+  return result;
 }
 
 node_t *rbtree_max(const rbtree *t) {
-  // TODO: implement find
-  return t->root;
+  node_t* result;
+  result = t->root;
+  
+  while (result->right != t->nil)
+    result = result->right;
+    
+  return result;
 }
 
 int rbtree_erase(rbtree *t, node_t *p) {
-  // TODO: implement erase
+  node_t *x, *y;
+  color_t yOrigColor;
+
+  y = p;
+  yOrigColor = y->color;
+
+  if (p->left == t->nil){
+    x = p->right;
+    rbtreeTransplant(t, p, p->right);
+  } else if (p->right == t->nil){
+    x = p->left;
+    rbtreeTransplant(t, p, p->left);
+  } else { 
+    y = minBySubtree(t, p->right);
+    yOrigColor = p->color;
+    x = y->right;
+
+    if (y != p->right) { 
+      rbtreeTransplant(t, y, y->right);
+      y->right = p->right;
+      y->right->parent = y;
+    }else{
+      x->parent = y;
+    }
+
+    rbtreeTransplant(t, p, y);
+    y->left = p->left;
+    y->left->parent = y;
+    y->color = p->color;
+  }
+  
+  if (yOrigColor == RBTREE_BLACK)
+    restoreEraseOrder(t, x);
+
   return 0;
 }
 
