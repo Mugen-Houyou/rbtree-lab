@@ -315,10 +315,14 @@ void test_find_erase(rbtree *t, const key_t *arr, const size_t n) {
     node_t *p = rbtree_insert(t, arr[i]);
     assert(p != NULL);
   }
+  
+  // rbtree_to_array(t, arr, n);
 
   for (int i = 0; i < n; i++) {
     node_t *p = rbtree_find(t, arr[i]);
-    // printf("arr[%d] = %d\n", i, arr[i]);
+    printf("arr[%d] = %d", i, arr[i]);
+    printf(", ");
+    printf("p = %p\n", p);
     assert(p != NULL);
     assert(p->key == arr[i]);
     rbtree_erase(t, p);
@@ -349,7 +353,6 @@ void test_find_erase_fixed() {
   assert(t != NULL);
 
   test_find_erase(t, arr, n);
-
   delete_rbtree(t);
 }
 
