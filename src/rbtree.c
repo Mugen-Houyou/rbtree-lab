@@ -249,6 +249,7 @@ void restoreInsertOrder(rbtree *t, node_t *z){
     // 좌우 대칭 - 오른쪽 자식
     }else{
       uncle = z->parent->parent->left;
+
       if (uncle->color == RBTREE_RED){
         z->parent->color = RBTREE_BLACK;
         uncle->color = RBTREE_BLACK;
@@ -261,6 +262,7 @@ void restoreInsertOrder(rbtree *t, node_t *z){
         z = z->parent;
         rotateRight(t, z);
       } 
+      
       z->parent->color = RBTREE_BLACK;
       z->parent->parent->color = RBTREE_RED;
       rotateLeft(t, z->parent->parent);
