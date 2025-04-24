@@ -130,11 +130,7 @@ node_t *newNode(rbtree *t, const key_t key){
 
 void restoreEraseOrder(rbtree *t, node_t *me){
   node_t *w, *y, *uncle;
-
-  // // 대상이 NIL면 돌아가 (필요없으니까)
-  // if (me == t->nil)
-  //   return;
-
+  
   while (me != t->root && me->color == RBTREE_BLACK) {
     // 대상이 왼쪽 자식
     if (me == me->parent->left){
