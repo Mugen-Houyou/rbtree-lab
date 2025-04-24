@@ -129,84 +129,64 @@ node_t *newNode(rbtree *t, const key_t key){
 }
 
 void restoreEraseOrder(rbtree *t, node_t *me){
-  node_t *bro; // me의 형제
-
-  // // 대상이 NIL면 돌아가 (필요없으니까)
-  // if (me == t->nil)
-  //   return;
-
-  for (;;) {
-    // BLACK여야 함
-    if (me->color == RBTREE_RED) 
-      break;
-
-    // 루트면 돌아가
-    if (me == t->root)
-      break;
-
+  node_t *w, *y, *uncle;
+  
+  while (me != t->root && me->color == RBTREE_BLACK) {
     // 대상이 왼쪽 자식
     if (me == me->parent->left){
-      bro = me->parent->right;
+      w = me->parent->right;
 
-      // 케이스 I
-      if (bro->color == RBTREE_RED){
-        bro->color = RBTREE_BLACK;
+      if (w->color == RBTREE_RED){
+        w->color = RBTREE_BLACK;
         me->parent->color = RBTREE_RED;
         rotateLeft(t, me->parent);
-        bro = me->parent->right;
+        w = me->parent->right;
       }
 
-      // 케이스 II
-      if (bro->left->color == RBTREE_BLACK && bro->right->color == RBTREE_BLACK){
-        bro->color = RBTREE_RED;
+      if (w->left->color == RBTREE_BLACK && w->right->color == RBTREE_BLACK){
+        w->color = RBTREE_RED;
         me = me->parent;
-        continue; // 얘는 문제를 부모로 올리고 처음으로
+      } else {
+        if (w->right->color == RBTREE_BLACK){
+          w->left->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          rotateRight(t, w);
+          w = me->parent->right;
+        }
+        w->color = me->parent->color;
+        me->parent->color = RBTREE_BLACK;
+        w->right->color = RBTREE_BLACK;
+        rotateLeft(t, me->parent);
+        me = t->root;
       }
-
-      // 케이스 III
-      if (bro->right->color == RBTREE_BLACK){
-        bro->left->color = RBTREE_BLACK;
-        bro->color = RBTREE_RED;
-        rotateRight(t, bro);
-        bro = me->parent->right;
-      }
-
-      // 케이스 IV
-      bro->color = me->parent->color;
-      me->parent->color = RBTREE_BLACK;
-      bro->right->color = RBTREE_BLACK;
-      rotateLeft(t, me->parent);
-      me = t->root;
 
     // 대상이 오른쪽 자식
     }else{
-      bro = me->parent->left;
+      w = me->parent->left;
 
-      if (bro->color == RBTREE_RED){
-        bro->color = RBTREE_BLACK;
+      if (w->color == RBTREE_RED){
+        w->color = RBTREE_BLACK;
         me->parent->color = RBTREE_RED;
         rotateRight(t, me->parent);
-        bro = me->parent->left;
+        w = me->parent->left;
       }
 
-      if (bro->right->color == RBTREE_BLACK && bro->left->color == RBTREE_BLACK){
-        bro->color = RBTREE_RED;
+      if (w->right->color == RBTREE_BLACK && w->left->color == RBTREE_BLACK){
+        w->color = RBTREE_RED;
         me = me->parent;
-        continue;
+      }else{
+        if (w->left->color == RBTREE_BLACK){
+          w->right->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          rotateLeft(t, w);
+          w = me->parent->left;
+        }
+        w->color = me->parent->color;
+        me->parent->color = RBTREE_BLACK;
+        w->left->color = RBTREE_BLACK;
+        rotateRight(t, me->parent);
+        me = t->root;
       }
-
-      if (bro->left->color == RBTREE_BLACK){
-        bro->right->color = RBTREE_BLACK;
-        bro->color = RBTREE_RED;
-        rotateLeft(t, bro);
-        bro = me->parent->left;
-      }
-
-      bro->color = me->parent->color;
-      me->parent->color = RBTREE_BLACK;
-      bro->left->color = RBTREE_BLACK;
-      rotateRight(t, me->parent);
-      me = t->root;
     }
   }
   
@@ -218,55 +198,45 @@ void restoreEraseOrder(rbtree *t, node_t *me){
 void restoreInsertOrder(rbtree *t, node_t *z){
   node_t *uncle;
 
-  for (;;){
-    if (z->parent->color == RBTREE_BLACK)
-      break;
-
+  //for (;;){
+  while (z->parent->color == RBTREE_RED){
     // 왼쪽 자식
     if (z->parent == z->parent->parent->left ){
       uncle =  z->parent->parent->right;
-
-      // 케이스 I
       if (uncle->color == RBTREE_RED){
         z->parent->color = RBTREE_BLACK;
         uncle->color = RBTREE_BLACK;
         z->parent->parent->color = RBTREE_RED;
         z = z->parent->parent;
-        continue;
-      } 
-
-      // 케이스 II
-      if (z == z->parent->right){
-        z = z->parent;
-        rotateLeft(t, z);
-      } 
-
-      // 케이스 III
-      z->parent->color = RBTREE_BLACK;
-      z->parent->parent->color = RBTREE_RED;
-      rotateRight(t, z->parent->parent);
+      } else{
+        if (z == z->parent->right){
+          z = z->parent;
+          rotateLeft(t, z);
+        } 
+        z->parent->color = RBTREE_BLACK;
+        z->parent->parent->color = RBTREE_RED;
+        rotateRight(t, z->parent->parent);
+      }
 
     // 좌우 대칭 - 오른쪽 자식
     }else{
       uncle = z->parent->parent->left;
-
       if (uncle->color == RBTREE_RED){
         z->parent->color = RBTREE_BLACK;
         uncle->color = RBTREE_BLACK;
         z->parent->parent->color = RBTREE_RED;
         z = z->parent->parent;
-        continue;
+      } else{
+        if (z == z->parent->left){
+          z = z->parent;
+          rotateRight(t, z);
+        } 
+        z->parent->color = RBTREE_BLACK;
+        z->parent->parent->color = RBTREE_RED;
+        rotateLeft(t, z->parent->parent);
       }
-
-      if (z == z->parent->left){
-        z = z->parent;
-        rotateRight(t, z);
-      } 
-      
-      z->parent->color = RBTREE_BLACK;
-      z->parent->parent->color = RBTREE_RED;
-      rotateLeft(t, z->parent->parent);
     }
+    
   }
   t->root->color = RBTREE_BLACK;
 }
